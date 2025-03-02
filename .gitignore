@@ -18,3 +18,4 @@ __pycache__/
 data/processed/*
 data/uploads/*
 data/visuals/*
+static/visuals/*

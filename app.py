@@ -107,7 +107,7 @@ def visualize():
         # after_plots = visualizer.visualize_all(cleaned_df)
         
         # return jsonify({'before_cleaning': before_plots, 'after_cleaning': after_plots})
-        return jsonify({'before_cleaning': before_plots})
+        return jsonify({'before_plot': before_plots})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

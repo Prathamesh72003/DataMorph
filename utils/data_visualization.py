@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 import missingno as msno
@@ -39,7 +41,7 @@ class DataVisualization:
         return saved_files  
 
     def _save_plot(self, filename):
-        filepath = f"data/visuals/{filename}"
+        filepath = f"static/visuals/{filename}"
         plt.savefig(filepath)
         plt.close()
         return filepath

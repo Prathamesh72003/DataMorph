@@ -24,12 +24,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // Setup visualize button
   // document.getElementById("visualize-btn").addEventListener("click", visualizeData);
 
-
   // Setup modal download link
-  document.getElementById("download-link").addEventListener("click", function (e) {
-    // Copy the href from the main download link
-    this.href = document.getElementById("download-link").href;
-  });
+  document
+    .getElementById("download-link")
+    .addEventListener("click", function (e) {
+      // Copy the href from the main download link
+      this.href = document.getElementById("download-link").href;
+    });
 });
 
 function setupDragAndDrop() {
@@ -84,8 +85,8 @@ function setupDragAndDrop() {
 function formatValue(value) {
   if (typeof value === "object" && value !== null) {
     return JSON.stringify(value, null, 2) // Pretty print JSON
-      .replace(/[{}"]+/g, '') // Remove curly braces and quotes
-      .replace(/,/g, '<br>'); // Line breaks for readability
+      .replace(/[{}"]+/g, "") // Remove curly braces and quotes
+      .replace(/,/g, "<br>"); // Line breaks for readability
   }
   return value;
 }
@@ -100,13 +101,16 @@ function setupFileInput() {
 
 function handleFileUpload(file) {
   document.getElementById("filename-display").textContent = file.name;
-  document.getElementById("filesize-display").textContent = `Size: ${formatFileSize(file.size)}`;
+  document.getElementById(
+    "filesize-display"
+  ).textContent = `Size: ${formatFileSize(file.size)}`;
 
   document.getElementById("upload-area").style.display = "none";
   document.getElementById("file-info").style.display = "flex";
 
   document.getElementById("loading-container").style.display = "flex";
-  document.getElementById("loading-text").textContent = "Analyzing your data...";
+  document.getElementById("loading-text").textContent =
+    "Analyzing your data...";
 
   const formData = new FormData();
   formData.append("file", file);
@@ -138,7 +142,8 @@ function handleFileUpload(file) {
 
 function analyzeFile(filename) {
   // Update loading text
-  document.getElementById("loading-text").textContent = "Analyzing data quality issues...";
+  document.getElementById("loading-text").textContent =
+    "Analyzing data quality issues...";
 
   fetch("/analyze", {
     method: "POST",
@@ -172,7 +177,9 @@ function analyzeFile(filename) {
 }
 
 function displayIssues(issues) {
-  const issuesTable = document.getElementById("issues-table").querySelector("tbody");
+  const issuesTable = document
+    .getElementById("issues-table")
+    .querySelector("tbody");
   const issuesSection = document.getElementById("issues-section");
   const processBtn = document.getElementById("process-btn");
   const issuesSummary = document.getElementById("issues-summary");
@@ -186,11 +193,11 @@ function displayIssues(issues) {
     "Missing Values": 0,
     "Duplicate Data": 0,
     "Format Issues": 0,
-    "Outliers": 0,
+    Outliers: 0,
     "Data Type Issues": 0,
     "Class Imbalance": 0,
     "Categorical Conversion Needed": 0,
-    "Lexical Issues": 0
+    "Lexical Issues": 0,
   };
 
   // Loop through each detected issue category
@@ -237,12 +244,12 @@ function displayIssues(issues) {
           }
           detailContent += "</ul></li>";
         }
-      } else if (cat === "categorical_conversion_needed"){
+      } else if (cat === "categorical_conversion_needed") {
         displayCategory = "Categorical Conversion Needed";
         for (const [key, value] of Object.entries(details)) {
           detailContent += `<li><strong>${key}:</strong> ${value}</li>`;
         }
-      } else if (cat==="lexical_issues"){
+      } else if (cat === "lexical_issues") {
         displayCategory = "Lexical Issues";
         for (const [key, value] of Object.entries(details)) {
           detailContent += `<li><strong>${key}:</strong> ${value}</li>`;
@@ -259,7 +266,8 @@ function displayIssues(issues) {
 
     if (count > 0) {
       hasIssues = true;
-      issueCounts[displayCategory] = (issueCounts[displayCategory] || 0) + count;
+      issueCounts[displayCategory] =
+        (issueCounts[displayCategory] || 0) + count;
 
       const row = `
                 <tr>
@@ -282,7 +290,10 @@ function displayIssues(issues) {
       } else if (category === "Duplicate Data") {
         badgeClass = "duplicate";
         icon = "bi-files";
-      } else if (category === "Format Issues" || category === "Data Type Issues") {
+      } else if (
+        category === "Format Issues" ||
+        category === "Data Type Issues"
+      ) {
         badgeClass = "format";
         icon = "bi-type";
       } else if (category === "Outliers") {
@@ -292,13 +303,13 @@ function displayIssues(issues) {
         badgeClass = "class_imbalance";
         icon = "bi-bar-chart-line";
       } else if (category === "Lexical Issues") {
-        badgeClass = "lexical_issues"
-        icon = "bi-spellcheck"
-      } else if (category === "Categorical Conversion Needed"){
-        badgeClass = "categorical_conversion_needed"
-        icon = "bi-table"
-      } else {  
-        badgeClass = category
+        badgeClass = "lexical_issues";
+        icon = "bi-spellcheck";
+      } else if (category === "Categorical Conversion Needed") {
+        badgeClass = "categorical_conversion_needed";
+        icon = "bi-table";
+      } else {
+        badgeClass = category;
         icon = "bi-slash-circle";
       }
 
@@ -338,7 +349,7 @@ function processData() {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      filename: currentFilename
+      filename: currentFilename,
     }),
   })
     .then((response) => {
@@ -361,13 +372,17 @@ function processData() {
       document.getElementById("download-link").href = data.download_url;
 
       // Display applied methods in the success modal
-      document.getElementById("applied-methods").innerHTML = data.applied_methods;
+      document.getElementById("applied-methods").innerHTML =
+        data.applied_methods;
 
       // Display first 10 rows of cleaned data
-      document.getElementById("cleaned-data").innerHTML = data.cleaned_data_html;
+      document.getElementById("cleaned-data").innerHTML =
+        data.cleaned_data_html;
 
       // Show success modal
-      let successModal = new bootstrap.Modal(document.getElementById("successModal"));
+      let successModal = new bootstrap.Modal(
+        document.getElementById("successModal")
+      );
       successModal.show();
     })
     .catch((error) => {
@@ -401,7 +416,9 @@ function formatFileSize(bytes) {
   const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  return (
+    Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+  );
 }
 
 function showError(message) {
@@ -415,18 +432,17 @@ function showSuccess(message) {
   alert(message);
 }
 
-
 function updateSuccessModal(data) {
   // Populate applied methods
   const appliedMethodsContainer = document.getElementById("applied-methods");
   appliedMethodsContainer.innerHTML = ""; // Clear previous
 
   // successModal.querySelector("#visualization-details").textContent = `Visualization Details: ${data.details}`;
-  data.applied_methods.forEach(method => {
-      const badge = document.createElement("span");
-      badge.classList.add("badge", "bg-success", "me-1", "p-2", "rounded");
-      badge.textContent = method;
-      appliedMethodsContainer.appendChild(badge);
+  data.applied_methods.forEach((method) => {
+    const badge = document.createElement("span");
+    badge.classList.add("badge", "bg-success", "me-1", "p-2", "rounded");
+    badge.textContent = method;
+    appliedMethodsContainer.appendChild(badge);
   });
 
   // Populate Data Preview
@@ -435,29 +451,29 @@ function updateSuccessModal(data) {
   const dfHead = data.df_head; // Expecting a list of lists (rows)
 
   if (dfHead.length > 0) {
-      // Create header row
-      const thead = document.createElement("thead");
-      const headerRow = document.createElement("tr");
-      dfHead[0].forEach(colName => {
-          const th = document.createElement("th");
-          th.textContent = colName;
-          headerRow.appendChild(th);
-      });
-      thead.appendChild(headerRow);
-      table.appendChild(thead);
+    // Create header row
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    dfHead[0].forEach((colName) => {
+      const th = document.createElement("th");
+      th.textContent = colName;
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
 
-      // Create body rows
-      const tbody = document.createElement("tbody");
-      for (let i = 1; i < dfHead.length; i++) {
-          const row = document.createElement("tr");
-          dfHead[i].forEach(cell => {
-              const td = document.createElement("td");
-              td.textContent = cell;
-              row.appendChild(td);
-          });
-          tbody.appendChild(row);
-      }
-      table.appendChild(tbody);
+    // Create body rows
+    const tbody = document.createElement("tbody");
+    for (let i = 1; i < dfHead.length; i++) {
+      const row = document.createElement("tr");
+      dfHead[i].forEach((cell) => {
+        const td = document.createElement("td");
+        td.textContent = cell;
+        row.appendChild(td);
+      });
+      tbody.appendChild(row);
+    }
+    table.appendChild(tbody);
   }
 
   // Set download link
@@ -467,25 +483,19 @@ function updateSuccessModal(data) {
   new bootstrap.Modal(document.getElementById("successModal")).show();
 }
 
-
 function visualizeData() {
-  // Show loading spinner and update status text
   document.getElementById("loading-container").style.display = "flex";
-  document.getElementById("loading-text").textContent = "Visualizing your data...";
-
-  // Disable process button during processing
+  document.getElementById("loading-text").textContent =
+    "Visualizing your data...";
   document.getElementById("process-btn").disabled = true;
-  console.log(currentFilename);
+  console.log("Current filename:", currentFilename);
 
-  // Send the current filename to the backend for visualization
   fetch("/visualize", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      filename: currentFilename,
-    }),
+    body: JSON.stringify({ filename: currentFilename }),
   })
     .then((response) => {
       if (!response.ok) {
@@ -494,33 +504,27 @@ function visualizeData() {
       return response.json();
     })
     .then((data) => {
-      console.log("Response data:", data);  // Log the response data
-
-      // Hide loading spinner
+      console.log("Response data:", data);
       document.getElementById("loading-container").style.display = "none";
+      const visualizationContainer = document.getElementById(
+        "visualization-container"
+      );
 
-      if (data.error) {
-        showError("Visualization data failed: " + data.error);
-        document.getElementById("process-btn").disabled = false;
-        return;
-      }
+      visualizationContainer.innerHTML = "";
+      visualizationContainer.style.display = "block";
 
-      const visualizationContainer = document.getElementById("visualization-container");
-  
-      if (data.before_plot?.length) {
-          // Show the container if not already visible
-          if (visualizationContainer.style.display === "none") {
-              visualizationContainer.style.display = "block";
-          }
-  
-          data.before_plot.forEach(imageUrl => {
-              const imgElement = document.createElement("img");
-              console.log(imageUrl);
-              imgElement.src = imageUrl;
-              imgElement.alt = "Before Plot Image";
-              imgElement.classList.add("visualization-image");
-              visualizationContainer.appendChild(imgElement);
-          });
+      if (data.before_plot && data.before_plot.length) {
+        data.before_plot.forEach((imageUrl) => {
+          const imgElement = document.createElement("img");
+          imgElement.src = imageUrl;
+          imgElement.alt = "Visualization Image";
+          // Add the CSS class for styling
+          imgElement.classList.add("visualization-image");
+          visualizationContainer.appendChild(imgElement);
+        });
+      } else {
+        visualizationContainer.innerHTML =
+          "<p>No visualizations available.</p>";
       }
     })
     .catch((error) => {
@@ -530,7 +534,3 @@ function visualizeData() {
       console.error("Error:", error);
     });
 }
-
-
-
-
