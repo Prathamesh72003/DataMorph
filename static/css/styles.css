@@ -11,6 +11,8 @@
     --body-bg: #f0f2f5;
     --card-bg: #ffffff;
     --transition-speed: 0.3s;
+    --green-color: #22c55e; 
+    --red-color: #ff0000;
 }
 
 body {
@@ -244,6 +246,11 @@ body {
     color: var(--warning-color);
 }
 
+.issue-badge.lexical_issues {
+    background-color: rgba(248, 150, 30, 0.1);
+    color: var(--warning-color);
+}
+
 .issue-badge.format {
     background-color: rgba(67, 97, 238, 0.1);
     color: var(--primary-color);
@@ -252,6 +259,17 @@ body {
 .issue-badge.outlier {
     background-color: rgba(76, 201, 240, 0.1);
     color: var(--success-color);
+}
+
+.issue-badge.class_imbalance {
+    background-color: rgba(34, 197, 94, 0.1); 
+    color: var(--green-color); 
+
+}
+
+.issue-badge.categorical_conversion_needed {
+    background-color: rgba(220, 38, 38, 0.1);
+    color: var(--red-color);
 }
 
 /* Table Styles */
@@ -465,4 +483,36 @@ body {
     .issues-summary {
         justify-content: center;
     }
+}
+
+.small-data-preview {
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.table-sm th, .table-sm td {
+    padding: 4px;
+    font-size: 12px;
+}
+
+.success-icon {
+    font-size: 50px;
+    color: #28a745;
+}
+
+.visualization-image {
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 20px;
+  }
+  
+.modal-image {
+width: 100%;
+max-width: 400px;
+margin-bottom: 20px;
+}
+
+#visualization-container {
+display: none;
 }

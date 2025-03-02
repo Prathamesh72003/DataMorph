@@ -2,6 +2,7 @@
 venv/
 .env
 .venv/
+myenv
 
 # Python cache
 __pycache__/
@@ -16,3 +17,4 @@ __pycache__/
 
 data/processed/*
 data/uploads/*
+data/visuals/*

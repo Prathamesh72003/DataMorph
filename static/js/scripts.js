@@ -21,8 +21,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // Setup process button
   document.getElementById("process-btn").addEventListener("click", processData);
 
+  // Setup visualize button
+  // document.getElementById("visualize-btn").addEventListener("click", visualizeData);
+
+
   // Setup modal download link
-  document.getElementById("modal-download-link").addEventListener("click", function (e) {
+  document.getElementById("download-link").addEventListener("click", function (e) {
     // Copy the href from the main download link
     this.href = document.getElementById("download-link").href;
   });
@@ -77,6 +81,15 @@ function setupDragAndDrop() {
   }
 }
 
+function formatValue(value) {
+  if (typeof value === "object" && value !== null) {
+    return JSON.stringify(value, null, 2) // Pretty print JSON
+      .replace(/[{}"]+/g, '') // Remove curly braces and quotes
+      .replace(/,/g, '<br>'); // Line breaks for readability
+  }
+  return value;
+}
+
 function setupFileInput() {
   document.getElementById("csv-file").addEventListener("change", (e) => {
     if (e.target.files.length) {
@@ -114,6 +127,7 @@ function handleFileUpload(file) {
         return;
       }
       currentFilename = data.filename; // Store filename globally
+      visualizeData();
       analyzeFile(currentFilename);
     })
     .catch((error) => {
@@ -173,7 +187,10 @@ function displayIssues(issues) {
     "Duplicate Data": 0,
     "Format Issues": 0,
     "Outliers": 0,
-    "Data Type Issues": 0
+    "Data Type Issues": 0,
+    "Class Imbalance": 0,
+    "Categorical Conversion Needed": 0,
+    "Lexical Issues": 0
   };
 
   // Loop through each detected issue category
@@ -181,33 +198,64 @@ function displayIssues(issues) {
     let displayCategory = "";
     const cat = category.toLowerCase();
     let count = 0;
-    let detailContent = "";
+    // let detailContent = "";
+    detailContent = "<ul>";
 
     if (cat === "duplicates") {
       count = details; // duplicates is a number
       displayCategory = "Duplicate Data";
-      detailContent = `<p>Total duplicates: ${details}</p>`;
+      detailContent = `<p>Total duplicates: ${count}</p>`;
     } else {
       // For object-based details
       count = Object.keys(details).length;
       if (cat === "missing") {
         displayCategory = "Missing Values";
+        for (const [key, value] of Object.entries(details)) {
+          detailContent += `<li><strong>${key}:</strong> ${value}</li>`;
+        }
       } else if (cat === "outliers") {
         displayCategory = "Outliers";
+        for (const [key, value] of Object.entries(details)) {
+          detailContent += `<li><strong>${key}:</strong> ${value}</li>`;
+        }
       } else if (cat === "dtypes") {
         displayCategory = "Data Type Issues";
+        for (const [key, value] of Object.entries(details)) {
+          detailContent += `<li><strong>${key}:</strong> ${value}</li>`;
+        }
       } else if (cat === "formatting") {
         displayCategory = "Format Issues";
+        for (const [key, value] of Object.entries(details)) {
+          detailContent += `<li><strong>${key}:</strong> ${value}</li>`;
+        }
+      } else if (category.toLowerCase() === "class_imbalance") {
+        displayCategory = "Class Imbalance";
+        for (const [key, value] of Object.entries(details)) {
+          detailContent += `<li><strong>${key}:</strong><ul><br>`;
+          for (const [subKey, subValue] of Object.entries(value)) {
+            detailContent += `<li>${subKey}: ${subValue.toFixed(4)}</li>`;
+          }
+          detailContent += "</ul></li>";
+        }
+      } else if (cat === "categorical_conversion_needed"){
+        displayCategory = "Categorical Conversion Needed";
+        for (const [key, value] of Object.entries(details)) {
+          detailContent += `<li><strong>${key}:</strong> ${value}</li>`;
+        }
+      } else if (cat==="lexical_issues"){
+        displayCategory = "Lexical Issues";
+        for (const [key, value] of Object.entries(details)) {
+          detailContent += `<li><strong>${key}:</strong> ${value}</li>`;
+        }
       } else {
         displayCategory = category;
+        for (const [key, value] of Object.entries(details)) {
+          detailContent += `<li><strong>${key}:</strong> ${value}</li>`;
+        }
       }
-
-      detailContent = "<ul>";
-      for (const [key, value] of Object.entries(details)) {
-        detailContent += `<li><strong>${key}:</strong> ${value}</li>`;
-      }
-      detailContent += "</ul>";
     }
+
+    detailContent += "</ul>";
 
     if (count > 0) {
       hasIssues = true;
@@ -240,6 +288,18 @@ function displayIssues(issues) {
       } else if (category === "Outliers") {
         badgeClass = "outlier";
         icon = "bi-graph-up";
+      } else if (category === "Class Imbalance") {
+        badgeClass = "class_imbalance";
+        icon = "bi-bar-chart-line";
+      } else if (category === "Lexical Issues") {
+        badgeClass = "lexical_issues"
+        icon = "bi-spellcheck"
+      } else if (category === "Categorical Conversion Needed"){
+        badgeClass = "categorical_conversion_needed"
+        icon = "bi-table"
+      } else {  
+        badgeClass = category
+        icon = "bi-slash-circle";
       }
 
       issuesSummary.innerHTML += `
@@ -298,14 +358,16 @@ function processData() {
       }
 
       // Enable download button and set the link
-      const downloadLink = document.getElementById("download-link");
-      downloadLink.href = data.download_url;
-      downloadLink.style.display = "inline-block";
+      document.getElementById("download-link").href = data.download_url;
 
-      // Set the modal download link
-      document.getElementById("modal-download-link").href = data.download_url;
+      // Display applied methods in the success modal
+      document.getElementById("applied-methods").innerHTML = data.applied_methods;
+
+      // Display first 10 rows of cleaned data
+      document.getElementById("cleaned-data").innerHTML = data.cleaned_data_html;
 
       // Show success modal
+      let successModal = new bootstrap.Modal(document.getElementById("successModal"));
       successModal.show();
     })
     .catch((error) => {
@@ -352,3 +414,123 @@ function showSuccess(message) {
   // Show success message alert
   alert(message);
 }
+
+
+function updateSuccessModal(data) {
+  // Populate applied methods
+  const appliedMethodsContainer = document.getElementById("applied-methods");
+  appliedMethodsContainer.innerHTML = ""; // Clear previous
+
+  // successModal.querySelector("#visualization-details").textContent = `Visualization Details: ${data.details}`;
+  data.applied_methods.forEach(method => {
+      const badge = document.createElement("span");
+      badge.classList.add("badge", "bg-success", "me-1", "p-2", "rounded");
+      badge.textContent = method;
+      appliedMethodsContainer.appendChild(badge);
+  });
+
+  // Populate Data Preview
+  const table = document.getElementById("cleaned-data");
+  table.innerHTML = ""; // Clear previous
+  const dfHead = data.df_head; // Expecting a list of lists (rows)
+
+  if (dfHead.length > 0) {
+      // Create header row
+      const thead = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+      dfHead[0].forEach(colName => {
+          const th = document.createElement("th");
+          th.textContent = colName;
+          headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      // Create body rows
+      const tbody = document.createElement("tbody");
+      for (let i = 1; i < dfHead.length; i++) {
+          const row = document.createElement("tr");
+          dfHead[i].forEach(cell => {
+              const td = document.createElement("td");
+              td.textContent = cell;
+              row.appendChild(td);
+          });
+          tbody.appendChild(row);
+      }
+      table.appendChild(tbody);
+  }
+
+  // Set download link
+  document.getElementById("download-link").href = data.download_url;
+
+  // Show modal
+  new bootstrap.Modal(document.getElementById("successModal")).show();
+}
+
+
+function visualizeData() {
+  // Show loading spinner and update status text
+  document.getElementById("loading-container").style.display = "flex";
+  document.getElementById("loading-text").textContent = "Visualizing your data...";
+
+  // Disable process button during processing
+  document.getElementById("process-btn").disabled = true;
+  console.log(currentFilename);
+
+  // Send the current filename to the backend for visualization
+  fetch("/visualize", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      filename: currentFilename,
+    }),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      console.log("Response data:", data);  // Log the response data
+
+      // Hide loading spinner
+      document.getElementById("loading-container").style.display = "none";
+
+      if (data.error) {
+        showError("Visualization data failed: " + data.error);
+        document.getElementById("process-btn").disabled = false;
+        return;
+      }
+
+      const visualizationContainer = document.getElementById("visualization-container");
+  
+      if (data.before_plot?.length) {
+          // Show the container if not already visible
+          if (visualizationContainer.style.display === "none") {
+              visualizationContainer.style.display = "block";
+          }
+  
+          data.before_plot.forEach(imageUrl => {
+              const imgElement = document.createElement("img");
+              console.log(imageUrl);
+              imgElement.src = imageUrl;
+              imgElement.alt = "Before Plot Image";
+              imgElement.classList.add("visualization-image");
+              visualizationContainer.appendChild(imgElement);
+          });
+      }
+    })
+    .catch((error) => {
+      document.getElementById("loading-container").style.display = "none";
+      document.getElementById("process-btn").disabled = false;
+      showError("Visualization failed: " + error.message);
+      console.error("Error:", error);
+    });
+}
+
+
+
+
