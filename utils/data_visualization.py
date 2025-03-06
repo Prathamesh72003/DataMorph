@@ -23,20 +23,20 @@ class DataVisualization:
 
         if len(numeric_cols) > 0:
             saved_files.append(self._plot_boxplot(df, numeric_cols[1]))
-            saved_files.append(self._plot_violinplot(df, numeric_cols[0]))
+            # saved_files.append(self._plot_violinplot(df, numeric_cols[0]))
             saved_files.append(self._plot_histogram(df, numeric_cols[0]))
-            saved_files.append(self._plot_kdeplot(df, numeric_cols[0]))
+            # saved_files.append(self._plot_kdeplot(df, numeric_cols[0]))
 
         if len(numeric_cols) > 1:
             saved_files.append(self._plot_scatterplot(df, numeric_cols[0], numeric_cols[1]))
 
         saved_files.append(self._plot_missing_heatmap(df))
-        saved_files.append(self._plot_missing_bar(df))
-        saved_files.append(self._plot_missing_dendrogram(df))
+        # saved_files.append(self._plot_missing_bar(df))
+        # saved_files.append(self._plot_missing_dendrogram(df))
         saved_files.append(self._plot_correlation_heatmap(df))
 
-        if len(numeric_cols) > 2:
-            saved_files.append(self._plot_pairplot(df, numeric_cols[:3]))
+        # if len(numeric_cols) > 2:
+        #     # saved_files.append(self._plot_pairplot(df, numeric_cols[:3]))
         
         return saved_files  
 
@@ -53,11 +53,11 @@ class DataVisualization:
         plt.title(f"Box Plot of {column}")
         return self._save_plot(f"boxplot_{column}.png")
 
-    def _plot_violinplot(self, df, column):
-        plt.figure(figsize=(6, 4))
-        sns.violinplot(x=df[column])
-        plt.title(f"Violin Plot of {column}")
-        return self._save_plot(f"violinplot_{column}.png")
+    # def _plot_violinplot(self, df, column):
+    #     plt.figure(figsize=(6, 4))
+    #     sns.violinplot(x=df[column])
+    #     plt.title(f"Violin Plot of {column}")
+    #     return self._save_plot(f"violinplot_{column}.png")
 
     def _plot_scatterplot(self, df, x_col, y_col):
         plt.figure(figsize=(6, 4))
@@ -79,28 +79,28 @@ class DataVisualization:
         plt.title("Missing Values Heatmap")
         return self._save_plot("missing_heatmap.png")
 
-    def _plot_missing_bar(self, df):
-        plt.figure(figsize=(6, 4))
-        df.isnull().sum().plot(kind="bar", color='coral')
-        plt.title("Missing Values Count")
-        plt.ylabel("Count")
-        return self._save_plot("missing_bar.png")
+    # def _plot_missing_bar(self, df):
+    #     plt.figure(figsize=(6, 4))
+    #     df.isnull().sum().plot(kind="bar", color='coral')
+    #     plt.title("Missing Values Count")
+    #     plt.ylabel("Count")
+    #     return self._save_plot("missing_bar.png")
 
-    def _plot_missing_dendrogram(self, df):
-        plt.figure(figsize=(6, 4))
-        msno.dendrogram(df)
-        plt.title("Missing Values Dendrogram")
-        return self._save_plot("missing_dendrogram.png")
+    # def _plot_missing_dendrogram(self, df):
+    #     plt.figure(figsize=(6, 4))
+    #     msno.dendrogram(df)
+    #     plt.title("Missing Values Dendrogram")
+    #     return self._save_plot("missing_dendrogram.png")
 
-    def _plot_pairplot(self, df, columns):
-        sns.pairplot(df[columns])
-        return self._save_plot("pairplot.png")
+    # def _plot_pairplot(self, df, columns):
+    #     sns.pairplot(df[columns])
+    #     return self._save_plot("pairplot.png")
 
-    def _plot_kdeplot(self, df, column):
-        plt.figure(figsize=(6, 4))
-        sns.kdeplot(df[column], fill=True, color='blue')
-        plt.title(f"KDE Plot of {column}")
-        return self._save_plot(f"kde_{column}.png")
+    # def _plot_kdeplot(self, df, column):
+    #     plt.figure(figsize=(6, 4))
+    #     sns.kdeplot(df[column], fill=True, color='blue')
+    #     plt.title(f"KDE Plot of {column}")
+    #     return self._save_plot(f"kde_{column}.png")
 
     def _plot_correlation_heatmap(self, df):
         plt.figure(figsize=(6, 4))
