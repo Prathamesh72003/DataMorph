@@ -3,7 +3,7 @@ import os
 class Config:
     UPLOAD_FOLDER = 'data/uploads'
     PROCESSED_FOLDER = 'data/processed'
-    ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
+    ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'pdf', 'sql'}
     SECRET_KEY = 'your-secret-key-here'
     
     @staticmethod

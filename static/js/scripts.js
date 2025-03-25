@@ -534,3 +534,109 @@ function visualizeData() {
       console.error("Error:", error);
     });
 }
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const chatBtn = document.getElementById("chat-btn")
+  const chatContainer = document.querySelector(".chat-container")
+  const closeChat = document.getElementById("close-chat")
+  const sendBtn = document.getElementById("send-btn")
+  const userInput = document.getElementById("user-input")
+
+  const marked = window.marked
+
+  chatBtn.addEventListener("click", () => {
+    chatContainer.style.display = "flex"
+    chatBtn.style.display = "none"
+  })
+
+  closeChat.addEventListener("click", () => {
+    chatContainer.style.display = "none"
+    chatBtn.style.display = "block"
+  })
+
+  sendBtn.addEventListener("click", sendMessage)
+  userInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendMessage()
+  })
+
+  function sendMessage() {
+    const message = userInput.value.trim()
+    if (!message) return
+
+    addMessage(message, "user")
+    userInput.value = ""
+
+    showTypingIndicator()
+
+    fetch("/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: message }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        removeTypingIndicator()
+
+        if (data.reply) {
+          addMessage(data.reply, "bot")
+        } else if (data.error) {
+          addMessage(`Error: ${data.error}`, "bot")
+        }
+      })
+      .catch((error) => {
+        removeTypingIndicator()
+        addMessage("Sorry, there was an error processing your request.", "bot")
+      })
+  }
+
+  function addMessage(content, sender) {
+    const messagesDiv = document.getElementById("chat-messages")
+    const messageDiv = document.createElement("div")
+    messageDiv.className = `message ${sender}-message`
+
+    const contentDiv = document.createElement("div")
+    contentDiv.className = "message-content"
+    contentDiv.innerHTML = marked.parse(content)
+
+    messageDiv.appendChild(contentDiv)
+    messagesDiv.appendChild(messageDiv)
+
+    messagesDiv.scrollTop = messagesDiv.scrollHeight
+  }
+
+  function showTypingIndicator() {
+    const messagesDiv = document.getElementById("chat-messages")
+    const typingDiv = document.createElement("div")
+    typingDiv.className = "typing-indicator"
+    typingDiv.id = "typing-indicator"
+
+    const typingContent = document.createElement("div")
+    typingContent.className = "message-content"
+
+    const typingDots = document.createElement("div")
+    typingDots.className = "typing-dots"
+
+    for (let i = 0; i < 3; i++) {
+      const dot = document.createElement("div")
+      dot.className = "typing-dot"
+      typingDots.appendChild(dot)
+    }
+
+    typingContent.appendChild(typingDots)
+    typingDiv.appendChild(typingContent)
+    messagesDiv.appendChild(typingDiv)
+
+    messagesDiv.scrollTop = messagesDiv.scrollHeight
+  }
+
+  function removeTypingIndicator() {
+    const typingIndicator = document.getElementById("typing-indicator")
+    if (typingIndicator) {
+      typingIndicator.remove()
+    }
+  }
+})
+

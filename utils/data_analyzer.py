@@ -91,3 +91,4 @@ class DataAnalyzer:
         for col in cat_cols:
             categorical_conversion[col] = "May need label encoding"
         return categorical_conversion
+    
