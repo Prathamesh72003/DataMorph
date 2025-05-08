@@ -34,6 +34,8 @@ visualizer = DataVisualization()
 
 CORS(app, origins=["http://localhost:3000"], supports_credentials=True)
 
+file_name_global=""
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -107,6 +109,8 @@ def extract_insert_values(sql_file, csv_file):
 
 @app.route('/upload', methods=['POST'])
 def upload():
+    
+    global file_name_global
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
 
@@ -115,6 +119,7 @@ def upload():
         return jsonify({'error': 'No selected file'}), 400
 
     if file and allowed_file(file.filename):
+        file_name_global = file.filename
         filename = secure_filename(file.filename)
         save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(save_path)
@@ -299,13 +304,25 @@ def chat():
     
 @app.route('/strategies', methods=['GET'])
 def get_strategies():
-    dp = DataProcessor()
-    return jsonify({
-        "missing": dp.missing_strategies,
-        "outliers": dp.outlier_strategies,
-        "categorical_data_conversion": dp.encoding_strategies,
-        "dtypes": dp.integrity_strategies
-    })
-
+    try:
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], file_name_global)
+        if file_name_global.endswith('.csv'):
+            df = pd.read_csv(filepath)
+            dp = DataProcessor()
+            dp.select_strategies(df)
+            return jsonify({
+                "missing": dp.missing_strategies,
+                "outliers": dp.outlier_strategies,
+                "categorical_data_conversion": dp.encoding_strategies,
+                "dtypes": dp.integrity_strategies
+            })
+        elif file_name_global.endswith('.xlsx'):
+            df = pd.read_excel(filepath, engine='openpyxl')
+        else:
+            return jsonify({'error': 'Unsupported file format for processing'}), 400
+    except Exception as e:
+         return jsonify({"error": str(e)}), 500
+    
+    
 if __name__ == '__main__':
     app.run(debug=True)
