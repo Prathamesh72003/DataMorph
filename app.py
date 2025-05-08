@@ -18,6 +18,12 @@ dotenv.load_dotenv()
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+app.config.update({
+    'SESSION_COOKIE_SAMESITE': 'None',
+    'SESSION_COOKIE_SECURE': True,
+    'SESSION_COOKIE_DOMAIN': 'localhost'
+})
 Config.init_app(app)
 
 analyzer = DataAnalyzer()
@@ -30,65 +36,72 @@ CORS(app, origins=["http://localhost:3000"], supports_credentials=True)
 def index():
     return render_template('index.html')
 
+
 def extract_insert_values(sql_file, csv_file):
     """
-    Robustly extracts INSERT values from an SQL file and saves them as a CSV.
-    Handles more complex SQL scenarios.
+    Extracts INSERT values from an SQL file and saves them as a CSV.
+    Preserves actual column names if available.
     """
     try:
         with open(sql_file, "r", encoding="utf-8") as f:
             sql_content = f.read()
 
-        # More robust INSERT statement pattern
-        insert_pattern = re.compile(r"INSERT\s+(?:(?:LOW_PRIORITY|DELAYED|HIGH_PRIORITY)\s+)?(?:IGNORE\s+)?INTO\s+`?(\w+)`?\s*(?:\([^)]+\))?\s*VALUES\s*((?:\s*\([^)]+\)\s*,?)+)", re.IGNORECASE | re.DOTALL)
-        matches = insert_pattern.findall(sql_content)
+        # Pattern to capture table name, column list (optional), and values
+        insert_pattern = re.compile(
+            r"INSERT\s+(?:IGNORE\s+)?INTO\s+`?(\w+)`?\s*(?:\(([^)]+)\))?\s*VALUES\s*((?:\([^)]+\)\s*,?\s*)+);?",
+            re.IGNORECASE | re.DOTALL
+        )
 
+        matches = insert_pattern.findall(sql_content)
         if not matches:
             return None, "No INSERT statements found in the SQL file."
 
         all_rows = []
         column_names = None
 
-        for table_name, values_part in matches:
-            # Extract values using a more complex regex
-            values_pattern = re.compile(r'\(([^)]+)\)')
-            values_matches = values_pattern.findall(values_part)
+        for table_name, columns_str, values_str in matches:
+            # Parse column names if present
+            if columns_str:
+                column_names = [col.strip(' `"\n\r\t') for col in columns_str.split(',')]
+            else:
+                column_names = None  # fallback if missing
 
-            for value in values_matches:
-                # More robust value parsing
-                parsed_values = []
-                for v in re.split(r',(?=(?:[^\'"`]*[\'"`][^\'"`]*[\'"`])*[^\'"`]*$)', value):
-                    v = v.strip()
-                    # Handle different value types: NULL, numbers, strings
-                    if v.upper() == 'NULL':
-                        parsed_values.append(None)
-                    elif v.startswith("'") and v.endswith("'"):
-                        parsed_values.append(v.strip("'").replace("''", "'"))
-                    elif v.startswith('"') and v.endswith('"'):
-                        parsed_values.append(v.strip('"').replace('""', '"'))
+            # Match individual row value groups
+            row_matches = re.findall(r'\((.*?)\)', values_str, re.DOTALL)
+            for row in row_matches:
+                parsed_row = []
+                for value in re.split(r',(?=(?:[^\'"`]*[\'"`][^\'"`]*[\'"`])*[^\'"`]*$)', row):
+                    value = value.strip()
+                    if value.upper() == 'NULL':
+                        parsed_row.append(None)
+                    elif value.startswith("'") and value.endswith("'"):
+                        parsed_row.append(value[1:-1].replace("''", "'"))
+                    elif value.startswith('"') and value.endswith('"'):
+                        parsed_row.append(value[1:-1].replace('""', '"'))
                     else:
                         try:
-                            # Try to convert to number if possible
-                            parsed_values.append(float(v) if '.' in v else int(v))
+                            parsed_row.append(float(value) if '.' in value else int(value))
                         except ValueError:
-                            parsed_values.append(v)
+                            parsed_row.append(value)
 
-                if column_names is None:
-                    # Attempt to get column names from table metadata or use generic names
-                    column_names = [f'{table_name}_col_{i+1}' for i in range(len(parsed_values))]
+                all_rows.append(parsed_row)
 
-                all_rows.append(parsed_values)
+        # Fallback column names if not parsed
+        if column_names is None:
+            column_count = max(len(row) for row in all_rows)
+            column_names = [f'{table_name}_col_{i+1}' for i in range(column_count)]
 
-        # Write to CSV
+        # Save to CSV
         with open(csv_file, 'w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
-            writer.writerow(column_names) 
-            writer.writerows(all_rows)  
+            writer.writerow(column_names)
+            writer.writerows(all_rows)
 
         return csv_file, None
 
     except Exception as e:
         return None, f"Error processing SQL file: {str(e)}"
+
 
 @app.route('/upload', methods=['POST'])
 def upload():
@@ -159,6 +172,7 @@ def upload():
 @app.route('/analyze', methods=['POST'])
 def analyze():
     data = request.get_json()
+    global file_context_global
     try:
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], data['filename'])
         if data['filename'].endswith('.csv'):
@@ -171,6 +185,8 @@ def analyze():
         issues = analyzer.detect_all_issues(df)
         filtered_issues = {k: v for k, v in issues.items() if v}
         session['file_context'] = f"Detected issues: {filtered_issues}"
+        file_context_global = f"Detected issues: {filtered_issues}"
+        session.modified = True 
         return jsonify({'issues': filtered_issues})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -187,15 +203,37 @@ def process():
         else:
             return jsonify({'error': 'Unsupported file format for processing'}), 400
 
+        # Detect issues and clean
         all_detected_issues = analyzer.detect_all_issues(df)
         cleaned_df = processor.process_data(df, data['methods'],all_detected_issues.keys())
 
+        # Save cleaned file
         output_filename = f'cleaned_{datetime.now().strftime("%Y%m%d%H%M%S")}.csv'
         output_path = os.path.join(app.config['PROCESSED_FOLDER'], output_filename)
         cleaned_df.to_csv(output_path, index=False)
 
-        session['file_context'] = f"File processed. Applied methods: {processor.applied_methods}"
-        return jsonify({'download_url': f'/download/{output_filename}'})
+        # Build HTML preview of first 10 rows
+        cleaned_html = cleaned_df.head(10).to_html(
+            classes="table table-bordered table-striped table-sm text-center",
+            index=False,
+            border=0
+        )
+
+        # Ensure applied_methods is a list
+        methods = processor.applied_methods
+        if not isinstance(methods, list):
+            try:
+                methods = list(methods)
+            except Exception:
+                methods = [methods]
+
+        # Return download URL, applied methods, and HTML preview
+        return jsonify({
+            'download_url': f'/download/{output_filename}',
+            'applied_methods': methods,
+            'cleaned_data_html': cleaned_html
+        })
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -235,8 +273,10 @@ def chat():
     data = request.get_json()
     user_message = data.get('message', '')
     history = session.get('chat_history', [])
-    file_context = session.get('file_context', '')
+    file_context = file_context_global if file_context_global else session.get('file_context', {})
     
+    print("filecontext:"+file_context)
+
     if file_context and (not history or history[0].get('role') != 'system'):
         history.insert(0, {"role": "system", "content": f"File context: {file_context}"})
 
