@@ -45,7 +45,7 @@ class DataProcessor:
 
         print("5")
         if selected_issues is None:
-            selected_issues = ['duplicates', 'dtypes', 'missing', 'outliers', 'formats', 'spelling', 'class_imbalance']
+            selected_issues = ['duplicates', 'dtypes', 'missing', 'outliers', 'formats', 'spelling']
         
         print("6")
         if 'duplicates' in selected_issues:
