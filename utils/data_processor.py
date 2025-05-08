@@ -21,7 +21,6 @@ nltk.download('stopwords')
 class DataProcessor:
     def __init__(self):
         self.applied_methods = {}
-        self.strategies = {}
         self.missing_strategies={}
         self.outlier_strategies={}
         self.encoding_strategies={}
@@ -38,8 +37,11 @@ class DataProcessor:
         self.encoding_strategies = self.detect_categorical_encoding_strategy(df, target_column)
         print("4")
 
-    def process_data(self, df, selected_issues=None):
+    def process_data(self, df, methods, selected_issues=None):
         self.select_strategies(df)
+
+        self.set_strategies(methods)
+        print(methods)
 
         print("5")
         if selected_issues is None:
@@ -79,6 +81,20 @@ class DataProcessor:
 
         print("14")
         return df
+
+    def set_strategies(self, methods):
+        """
+        Sets the instance variables for strategies from the given methods dictionary.
+        """
+        self.encoding_strategies = methods.get('categorical_conversion_needed', {})
+        self.integrity_strategies = methods.get('dtypes', {})
+        self.missing_strategies = methods.get('missing', {})
+        self.outlier_strategies = methods.get('outliers', {})
+
+        print("Encoding Strategies:", self.encoding_strategies)
+        print("Integrity Strategies:", self.integrity_strategies)
+        print("Missing Strategies:", self.missing_strategies)
+        print("Outlier Strategies:", self.outlier_strategies)
         
     def detect_missing_value_strategy(self, df):
         strategies = {}

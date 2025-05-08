@@ -188,7 +188,7 @@ def process():
             return jsonify({'error': 'Unsupported file format for processing'}), 400
 
         all_detected_issues = analyzer.detect_all_issues(df)
-        cleaned_df = processor.process_data(df, all_detected_issues.keys())
+        cleaned_df = processor.process_data(df, data['methods'],all_detected_issues.keys())
 
         output_filename = f'cleaned_{datetime.now().strftime("%Y%m%d%H%M%S")}.csv'
         output_path = os.path.join(app.config['PROCESSED_FOLDER'], output_filename)
