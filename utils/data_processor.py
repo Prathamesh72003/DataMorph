@@ -22,7 +22,64 @@ class DataProcessor:
     def __init__(self):
         self.applied_methods = {}
         self.strategies = {}
+        self.missing_strategies={}
+        self.outlier_strategies={}
+        self.encoding_strategies={}
+        self.integrity_strategies={}
 
+    def select_strategies(self, df, target_column=None):
+        """Detect and store all strategies for various issues."""
+        self.missing_strategies = self.detect_missing_value_strategy(df)
+        print("1")
+        self.integrity_strategies = self.detect_data_integrity_strategy(df)
+        print("2")
+        self.outlier_strategies = self.detect_outliers(df)
+        print("3")
+        self.encoding_strategies = self.detect_categorical_encoding_strategy(df, target_column)
+        print("4")
+
+    def process_data(self, df, selected_issues=None):
+        self.select_strategies(df)
+
+        print("5")
+        if selected_issues is None:
+            selected_issues = ['duplicates', 'dtypes', 'missing', 'outliers', 'formats', 'spelling', 'class_imbalance']
+        
+        print("6")
+        if 'duplicates' in selected_issues:
+            df = self._handle_duplicates(df)
+        
+        print("7")
+        if 'dtypes' in selected_issues:
+            df = self._resolve_data_integrity_strategy(df)
+        
+        print("8")
+        if 'missing' in selected_issues:
+            df = self._handle_missing(df)
+        
+        print("9")
+        if 'outliers' in selected_issues:
+            df = self._handle_outliers(df)
+        
+        print("10")
+        if 'formats' in selected_issues:
+            df = self._standardize_formats(df)
+
+
+        print("11")
+        if 'spelling' in selected_issues:
+            df = self._correct_spelling(df)
+            # df = self._resolve_lexical_issues_df(df)
+
+        print("12")
+        df = self._resolve_lexical_issues_df(df)
+
+        print("13")
+        df = self._apply_categorical_encoding(df)
+
+        print("14")
+        return df
+        
     def detect_missing_value_strategy(self, df):
         strategies = {}
         numeric_cols = df.select_dtypes(include=['number']).columns
@@ -86,13 +143,13 @@ class DataProcessor:
 
         return strategies
     
-    def detect_outliers(self):
+    def detect_outliers(self,df):
         """Detects the best outlier handling strategy for each numeric column."""
-        numeric_cols = self.df.select_dtypes(include=['number']).columns
+        numeric_cols = df.select_dtypes(include=['number']).columns
         detected_strategies = {}
 
         for col in numeric_cols:
-            data = self.df[col].dropna()
+            data = df[col].dropna()
 
             detected_strategies[col] = "Winsorization (Capping Outliers)"
 
@@ -116,11 +173,10 @@ class DataProcessor:
             if is_normal:
                 detected_strategies[col] = "Z-Score-Based Filtering (Standard Deviation Method)"
             elif has_outliers:
-                detected_strategies[col] = "IQR-Based Filtering (Interquartile Range Method)"
+                detected_strategies[col] = "Winsorization (Capping Outliers)"
             else:
                 detected_strategies[col] = "No Outlier Handling Required"
 
-        self.strategies = detected_strategies
         return detected_strategies
     
     def detect_categorical_encoding_strategy(self,df, target_column=None, high_cardinality_threshold=15):
@@ -155,38 +211,12 @@ class DataProcessor:
 
         return strategies
 
-    def process_data(self, df, selected_issues=None):
-        if selected_issues is None:
-            selected_issues = ['duplicates', 'dtypes', 'missing', 'outliers', 'formats', 'spelling', 'class_imbalance']
-        
-        if 'duplicates' in selected_issues:
-            df = self._handle_duplicates(df)
-        
-        if 'dtypes' in selected_issues:
-            df = self._resolve_data_integrity_strategy(df)
-        
-        if 'missing' in selected_issues:
-            df = self._handle_missing(df)
-        
-        if 'outliers' in selected_issues:
-            df = self._handle_outliers(df)
-        
-        if 'formats' in selected_issues:
-            df = self._standardize_formats(df)
-
-        if 'spelling' in selected_issues:
-            df = self._correct_spelling(df)
-            # df = self._resolve_lexical_issues_df(df)
-
-        df = self._resolve_lexical_issues_df(df)
-        df = self._apply_categorical_encoding(df)
-        return df
+    # ************************* Handling *****************************
 
     def _handle_missing(self, df):
         self.applied_methods['Missing Data'] = "Applied different strategies for missing data handling."
-        strategies = self.detect_missing_value_strategy(df)
-        
-        for col, strategy in strategies.items():
+
+        for col, strategy in self.missing_strategies.items():
             if strategy == "Mean (Continuous numerical data without outliers)":
                 df[col] = df[col].fillna(df[col].mean())
             elif strategy == "Median (Continuous numerical data with outliers)":
@@ -251,9 +281,9 @@ class DataProcessor:
         """
         Handles data integrity issues based on detected strategies.
         """
-        strategies = self.detect_data_integrity_strategy(df)
+        # strategies = self.integrity_strategies
 
-        for col, strategy in strategies.items():
+        for col, strategy in self.integrity_strategies.items():
             if strategy.startswith("Explicit Type Casting"):
                 df = self._apply_type_casting(df, col)
 
@@ -315,23 +345,31 @@ class DataProcessor:
 
     def _handle_outliers(self,df):
         """Applies the detected outlier handling strategy for each column."""
-        for col, strategy in self.strategies.items():
-            if strategy == "Winsorization (Capping Outliers)":
-                df=self._winsorize(df,col)
-            elif strategy == "Z-Score-Based Filtering (Standard Deviation Method)":
-                df=self._zscore_filter(df,col)
-            elif strategy == "IQR-Based Filtering (Interquartile Range Method)":
-                df=self._iqr_filter(df,col)
-
+        numeric_cols = df.select_dtypes(include=['number']).columns
+        for col, strategy in self.outlier_strategies.items():
+            if col in numeric_cols:
+                print("91")
+                if strategy == "Winsorization (Capping Outliers)":
+                    print("92")
+                    df=self._winsorize(df,col)
+                elif strategy == "Z-Score-Based Filtering (Standard Deviation Method)":
+                    print("93")
+                    df=self._zscore_filter(df,col)
+                # elif strategy == "IQR-Based Filtering (Interquartile Range Method)":
+                #     print("94")
+                #     df=self._iqr_filter(df,col)
         return df
 
     def _winsorize(self, df, col):
         """Capping extreme values for discrete data"""
-        q1, q3 = np.percentile(self.df[col], [25, 75])
-        iqr = q3 - q1
-        lower_cap = q1 - 1.5 * iqr
-        upper_cap = q3 + 1.5 * iqr
-        df[col] = np.clip(df[col], lower_cap, upper_cap)
+        numeric_cols = df.select_dtypes(include=['number']).columns
+        for col in numeric_cols:
+            q1 = df[col].quantile(0.25)
+            q3 = df[col].quantile(0.75)
+            iqr = q3 - q1
+            lower_bound = q1 - 1.5 * iqr
+            upper_bound = q3 + 1.5 * iqr
+            df[col] = df[col].clip(lower=lower_bound, upper=upper_bound)
         return df
 
     def _zscore_filter(self, df, col, threshold=3):
@@ -480,9 +518,8 @@ class DataProcessor:
     
     def _apply_categorical_encoding(self,df, target_column=None, hash_features=10):
         df_encoded = df.copy()
-        strategies = self.detect_categorical_encoding_strategy(df_encoded)
 
-        for col, strategy in strategies.items():
+        for col, strategy in self.encoding_strategies.items():
             if strategy == "Binary Encoding (Label Encoding)":
                 encoder = LabelEncoder()
                 df_encoded[col] = encoder.fit_transform(df_encoded[col])
