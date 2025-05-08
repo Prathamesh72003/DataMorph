@@ -217,21 +217,21 @@ class DataProcessor:
         self.applied_methods['Missing Data'] = "Applied different strategies for missing data handling."
 
         for col, strategy in self.missing_strategies.items():
-            if strategy == "Mean (Continuous numerical data without outliers)":
+            if strategy.startswith("Mean"):
                 df[col] = df[col].fillna(df[col].mean())
-            elif strategy == "Median (Continuous numerical data with outliers)":
+            elif strategy.startswith("Median"):
                 df[col] = df[col].fillna(df[col].median())
-            elif strategy in ["Mode (Discrete numerical data)", "Mode (Categorical data)"]:
+            elif "Mode" in strategy:
                 df[col] = df[col].fillna(df[col].mode()[0])
-            elif strategy in ["Backward Fill (Time-series data)", "Backward Fill (Small gaps in data)"]:
+            elif "Backward Fill" in strategy:
                 df[col] = df[col].fillna(method='bfill')
             elif "KNN Imputation" in strategy:
                 imputer = KNNImputer(n_neighbors=5)
                 df[col] = imputer.fit_transform(df[[col]])
-            elif strategy == "Multivariate Imputation (Depends on multiple features)":
+            elif "Multivariate Imputation" in strategy:
                 imputer = IterativeImputer()
                 df[col] = imputer.fit_transform(df[[col]])
-        
+
         return df
 
     def _handle_duplicates(self, df, subset=None, keep="first", strategy="full"):
@@ -349,10 +349,10 @@ class DataProcessor:
         for col, strategy in self.outlier_strategies.items():
             if col in numeric_cols:
                 print("91")
-                if strategy == "Winsorization (Capping Outliers)":
+                if strategy.startswith("Winsorization"):
                     print("92")
                     df=self._winsorize(df,col)
-                elif strategy == "Z-Score-Based Filtering (Standard Deviation Method)":
+                elif strategy == strategy.startswith("Z-Score-Based Filtering"):
                     print("93")
                     df=self._zscore_filter(df,col)
                 # elif strategy == "IQR-Based Filtering (Interquartile Range Method)":
@@ -538,7 +538,7 @@ class DataProcessor:
                 target_mean = df_encoded.groupby(col)[target_column].mean()
                 df_encoded[col] = df_encoded[col].map(target_mean)
 
-            elif strategy == "Hash Encoding (Feature Hashing)":
+            elif strategy.startswith("Hash Encoding"):
                 hasher = FeatureHasher(n_features=hash_features, input_type='string')
                 hashed_features = hasher.transform(df_encoded[col].astype(str))
                 hashed_df = pd.DataFrame(hashed_features.toarray(), columns=[f"{col}_hash_{i}" for i in range(hash_features)])

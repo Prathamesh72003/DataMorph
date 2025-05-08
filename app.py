@@ -12,6 +12,7 @@ import camelot
 import dotenv
 import csv
 import re
+from flask_cors import CORS
 
 dotenv.load_dotenv()
 
@@ -22,6 +23,8 @@ Config.init_app(app)
 analyzer = DataAnalyzer()
 processor = DataProcessor()
 visualizer = DataVisualization()
+
+CORS(app, origins=["http://localhost:3000"], supports_credentials=True)
 
 @app.route('/')
 def index():
