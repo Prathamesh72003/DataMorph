@@ -10,7 +10,6 @@ class DataAnalyzer:
           - dtypes: Potential mis-typed columns (e.g., numeric values stored as text).
           - outliers: Count of outlier observations per numeric column (using the IQR method).
           - formatting: Columns with inconsistent formatting in string data.
-          - class_imbalance: Class imbalance check for categorical-like numeric columns.
           - lexical_issues: Columns with potential lexical mistakes.
           - categorical_conversion_needed: Categorical columns that may need conversion.
         """
@@ -20,7 +19,6 @@ class DataAnalyzer:
             'dtypes': self._detect_dtype_issues(df),
             'outliers': self._detect_outliers(df),
             'formatting': self._detect_format_issues(df),
-            'class_imbalance': self._check_class_imbalance(df),
             'lexical_issues': self._detect_lexical_issues(df),
             'categorical_conversion_needed': self._detect_categorical_conversion(df)
         }
@@ -65,14 +63,6 @@ class DataAnalyzer:
             if not standardized.equals(df[col].dropna()):
                 issues[col] = "Inconsistent formatting detected"
         return issues
-
-    def _check_class_imbalance(self, df):
-        imbalance = {}
-        for col in df.columns:
-            if df[col].nunique() <= 10:
-                if pd.api.types.is_numeric_dtype(df[col]) or pd.api.types.is_categorical_dtype(df[col]) or df[col].dtype == 'object':
-                    imbalance[col] = df[col].value_counts(normalize=True).to_dict()
-        return imbalance
 
     def _detect_lexical_issues(self, df):
         lexical_issues = {}
