@@ -452,7 +452,7 @@ class DataProcessor:
             df[col] = df[col].apply(lambda x: spell.correction(x) if isinstance(x, str) else x)
         return df
     
-    def _lexical_normalization(self, text):
+    def lexical_normalization(self, text):
         """ Corrects spelling and expands common abbreviations. """
         if not isinstance(text, str):
             return text  # Skip non-string values

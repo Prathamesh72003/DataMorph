@@ -13,6 +13,8 @@ import dotenv
 import csv
 import re
 from flask_cors import CORS
+from flask_cors import CORS
+from utils.data_processor import DataProcessor
 
 dotenv.load_dotenv()
 
@@ -294,6 +296,16 @@ def chat():
         return jsonify({"reply": reply})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/strategies', methods=['GET'])
+def get_strategies():
+    dp = DataProcessor()
+    return jsonify({
+        "missing": dp.missing_strategies,
+        "outliers": dp.outlier_strategies,
+        "categorical_data_conversion": dp.encoding_strategies,
+        "dtypes": dp.integrity_strategies
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)
