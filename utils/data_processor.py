@@ -86,10 +86,10 @@ class DataProcessor:
         """
         Sets the instance variables for strategies from the given methods dictionary.
         """
-        self.encoding_strategies = methods.get('categorical_conversion_needed', {})
-        self.integrity_strategies = methods.get('dtypes', {})
-        self.missing_strategies = methods.get('missing', {})
-        self.outlier_strategies = methods.get('outliers', {})
+        self.encoding_strategies = methods.get('categorical_conversion_needed', self.encoding_strategies)
+        self.integrity_strategies = methods.get('dtypes', self.integrity_strategies)
+        self.missing_strategies = methods.get('missing', self.missing_strategies)
+        self.outlier_strategies = methods.get('outliers', self.outlier_strategies)
 
         print("Encoding Strategies:", self.encoding_strategies)
         print("Integrity Strategies:", self.integrity_strategies)
