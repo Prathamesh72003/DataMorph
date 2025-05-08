@@ -32,8 +32,6 @@ visualizer = DataVisualization()
 
 CORS(app, origins=["http://localhost:3000"], supports_credentials=True)
 
-file_context_global = ""
-
 @app.route('/')
 def index():
     return render_template('index.html')

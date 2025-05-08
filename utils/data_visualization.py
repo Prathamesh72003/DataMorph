@@ -12,52 +12,63 @@ class DataVisualization:
 
     def visualize_all(self, df):
         """
-        Generates key visualizations including:
-          - Outlier detection: Box plot, violin plot, scatter plot
-          - Missing values: Heatmap, bar chart, dendrogram
-          - General data distribution: Histogram, KDE plot, pair plot, correlation heatmap
+        Generates visualizations:
+        - Boxplots only for columns with outliers
+        - Scatter plot for most highly correlated column pair
+        - Histogram for the top numeric column
+        - Missing value heatmap
+        - Correlation heatmap
         """
-
-        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         saved_files = []
 
-        if len(numeric_cols) > 0:
-            saved_files.append(self._plot_boxplot(df, numeric_cols[1]))
-            # saved_files.append(self._plot_violinplot(df, numeric_cols[0]))
-            saved_files.append(self._plot_histogram(df, numeric_cols[0]))
-            # saved_files.append(self._plot_kdeplot(df, numeric_cols[0]))
+        # Correlation matrix and top correlated pair
+        corr_matrix = df[numeric_cols].corr(numeric_only=True).abs()
+        np.fill_diagonal(corr_matrix.values, 0)  # Ignore self-correlations
 
-        if len(numeric_cols) > 1:
-            saved_files.append(self._plot_scatterplot(df, numeric_cols[0], numeric_cols[1]))
+        # Find most highly correlated pair
+        max_corr = corr_matrix.unstack().idxmax()
+        x_col, y_col = max_corr
+        # if corr_matrix.loc[x_col, y_col] > 0.5:  # Only plot if strong correlation
+        saved_files.append(self._plot_scatterplot(df, x_col, y_col))
+
+        # Histograms for top 3 columns with highest variance
+        if numeric_cols:
+            col_variances = df[numeric_cols].var().sort_values(ascending=False)
+            top_var_cols = col_variances.head(3).index
+            for col in top_var_cols:
+                saved_files.append(self._plot_histogram(df, col))
+
+        # Boxplot for numeric columns with outliers
+        for col in numeric_cols:
+            if self._has_outliers(df[col]):
+                saved_files.append(self._plot_boxplot(df, col))
 
         saved_files.append(self._plot_missing_heatmap(df))
-        # saved_files.append(self._plot_missing_bar(df))
-        # saved_files.append(self._plot_missing_dendrogram(df))
         saved_files.append(self._plot_correlation_heatmap(df))
 
-        # if len(numeric_cols) > 2:
-        #     # saved_files.append(self._plot_pairplot(df, numeric_cols[:3]))
-        
-        return saved_files  
+        return saved_files
 
     def _save_plot(self, filename):
         filepath = f"static/visuals/{filename}"
+        plt.tight_layout()
         plt.savefig(filepath)
         plt.close()
         return filepath
-    
+
+    def _has_outliers(self, series):
+        q1 = series.quantile(0.25)
+        q3 = series.quantile(0.75)
+        iqr = q3 - q1
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        return ((series < lower_bound) | (series > upper_bound)).any()
+
     def _plot_boxplot(self, df, column):
-        print(column)
         plt.figure(figsize=(6, 4))
-        sns.boxplot(x=df[str(column)])
+        sns.boxplot(x=df[column])
         plt.title(f"Box Plot of {column}")
         return self._save_plot(f"boxplot_{column}.png")
-
-    # def _plot_violinplot(self, df, column):
-    #     plt.figure(figsize=(6, 4))
-    #     sns.violinplot(x=df[column])
-    #     plt.title(f"Violin Plot of {column}")
-    #     return self._save_plot(f"violinplot_{column}.png")
 
     def _plot_scatterplot(self, df, x_col, y_col):
         plt.figure(figsize=(6, 4))
@@ -79,31 +90,9 @@ class DataVisualization:
         plt.title("Missing Values Heatmap")
         return self._save_plot("missing_heatmap.png")
 
-    # def _plot_missing_bar(self, df):
-    #     plt.figure(figsize=(6, 4))
-    #     df.isnull().sum().plot(kind="bar", color='coral')
-    #     plt.title("Missing Values Count")
-    #     plt.ylabel("Count")
-    #     return self._save_plot("missing_bar.png")
-
-    # def _plot_missing_dendrogram(self, df):
-    #     plt.figure(figsize=(6, 4))
-    #     msno.dendrogram(df)
-    #     plt.title("Missing Values Dendrogram")
-    #     return self._save_plot("missing_dendrogram.png")
-
-    # def _plot_pairplot(self, df, columns):
-    #     sns.pairplot(df[columns])
-    #     return self._save_plot("pairplot.png")
-
-    # def _plot_kdeplot(self, df, column):
-    #     plt.figure(figsize=(6, 4))
-    #     sns.kdeplot(df[column], fill=True, color='blue')
-    #     plt.title(f"KDE Plot of {column}")
-    #     return self._save_plot(f"kde_{column}.png")
-
     def _plot_correlation_heatmap(self, df):
         plt.figure(figsize=(6, 4))
-        sns.heatmap(df.corr(numeric_only=True), annot=True, cmap='coolwarm', fmt=".2f", linewidths=0.5)
+        corr = df.corr(numeric_only=True)
+        sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f", linewidths=0.5)
         plt.title("Correlation Heatmap")
         return self._save_plot("correlation_heatmap.png")

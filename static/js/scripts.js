@@ -342,6 +342,7 @@ function processData() {
   // Disable process button during processing
   document.getElementById("process-btn").disabled = true;
 
+  console.log(currentFilename)
   // Send only the filename; backend will process all issues generically
   fetch("/process", {
     method: "POST",
@@ -363,7 +364,7 @@ function processData() {
       document.getElementById("loading-container").style.display = "none";
 
       if (data.error) {
-        showError("Processing failed: " + data.error);
+        showError("1Processing failed: " + data);
         document.getElementById("process-btn").disabled = false;
         return;
       }
@@ -388,7 +389,7 @@ function processData() {
     .catch((error) => {
       document.getElementById("loading-container").style.display = "none";
       document.getElementById("process-btn").disabled = false;
-      showError("Processing failed: " + error.message);
+      showError("2Processing failed: " + error.message);
       console.error("Error:", error);
     });
 }
